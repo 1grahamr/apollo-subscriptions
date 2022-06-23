@@ -2,7 +2,7 @@ import { gql } from 'apollo-server';
 
 export const typeDefs = gql`
   type Subscription {
-    balanceChangeEvent: BalanceChangeEvent
+    balanceChangeEvent(ownerId: ID!): BalanceChangeEvent
   }
 
   type Query {

@@ -78,16 +78,22 @@ const main = async () => {
     },
     Subscription: {
       balanceChangeEvent: {
-        subscribe: () => pubsub.asyncIterator(['BALANCE_CHANGED']),
+        subscribe: (parent: any, args: any, context: any, info: any) => {
+          console.log({ args, context, info });
+          const subject = `BALANCE_CHANGED:${args.ownerId}`;
+          console.log({ subject });
+          return pubsub.asyncIterator([subject]);
+        },
       },
     },
   };
   const app = await startApolloServer(typeDefs, resolvers);
 
   // make something happen
-  app.get('/push', (req: any, res: any) => {
-    console.log('stimulus');
-    pubsub.publish('BALANCE_CHANGED', {
+  app.get('/push/:id', (req: any, res: any) => {
+    const { id } = req.params;
+    console.log(`stimulus id=${id}`);
+    pubsub.publish(`BALANCE_CHANGED:${id}`, {
       balanceChangeEvent: {
         ownerId: '1234',
         balanceChange: {
