@@ -8,6 +8,7 @@ import { ApolloServerPluginDrainHttpServer } from "apollo-server-core";
 import { makeExecutableSchema } from '@graphql-tools/schema';
 import { WebSocketServer } from 'ws';
 import { useServer } from 'graphql-ws/lib/use/ws';
+import { PubSub } from 'graphql-subscriptions';
 
 const getAccount = (parent: any, args: any, context: any, info: any) => {
     console.log(`getAccount resolver`, {parent, args, context, info})
@@ -18,7 +19,7 @@ const getAccount = (parent: any, args: any, context: any, info: any) => {
     }
 }
 
-async function startApolloServer(typeDefs: any, resolvers: any) {
+async function startApolloServer(typeDefs: any, resolvers: any): Promise<express.Express> {
     const app = express()
     
     const httpServer = http.createServer(app)
@@ -46,6 +47,7 @@ async function startApolloServer(typeDefs: any, resolvers: any) {
         ],
       });
 
+
     // Creating the WebSocket server
     const wsServer = new WebSocketServer({
         server: httpServer,
@@ -65,15 +67,47 @@ async function startApolloServer(typeDefs: any, resolvers: any) {
     await new Promise<void>(resolve => httpServer.listen({ port: 4000 }, resolve))
 
     console.log(`🚀 Server ready at http://localhost:4000${server.graphqlPath}`)
+    return app
   }
 
+let globalCount = 0;
+
 const main = async () => {
+    const pubsub = new PubSub();
+
     const resolvers = {
             Query: {
                 getAccount,
             },
+            Subscription: {
+                balanceChangeEvent: {
+                    subscribe: () => pubsub.asyncIterator(['BALANCE_CHANGED']),
+                  },
+            },
       }
-    await startApolloServer(typeDefs, resolvers )
+    const app = await startApolloServer(typeDefs, resolvers )
+
+    // make something happen
+    app.get('/push', (req: any, res: any) => {
+        console.log(`stimulus`)
+        pubsub.publish('BALANCE_CHANGED', {
+            balanceChangeEvent: {
+                ownerId: '1234',
+                balanceChange: {
+                    sequenceNumber: globalCount++,
+                    delta: 1,
+                }
+            }
+        });
+        res.send('ACK') 
+      })
+      app.use(function(req, res, next) {
+        res.header("Access-Control-Allow-Origin", "https://studio.apollographql.com");
+        res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+        next();
+      });
+
+      
 }
 
 main()

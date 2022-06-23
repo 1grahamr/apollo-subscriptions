@@ -1,6 +1,10 @@
 import { gql } from 'apollo-server';
 
 export const typeDefs = gql`
+  type Subscription {
+    balanceChangeEvent: BalanceChangeEvent
+  }
+
   type Query {
     "get account"
     getAccount(tag: String!): Account!
@@ -26,6 +30,11 @@ export const typeDefs = gql`
     id: ID!
     "civic name"
     name: String!
+  }
+
+  type BalanceChangeEvent {
+    ownerId: ID!
+    balanceChange: BalanceChange!
   }
 
   "balance changes"
