@@ -1,8 +1,18 @@
+import { GraphQLWsLink } from '@apollo/client/link/subscriptions';
+import { createClient } from 'graphql-ws';
 import {
   ApolloClient, gql, HttpLink, InMemoryCache,
 } from '@apollo/client/core';
-
 import fetch from 'cross-fetch';
+import WebSocket from 'ws';
+
+const wsLink = new GraphQLWsLink(createClient({
+  webSocketImpl: WebSocket,
+  url: 'ws://localhost:4000/graphql',
+  connectionParams: {
+    authToken: 'auth token goes here',
+  },
+}));
 
 export const GET_ACCOUNT = gql`
   query GetAccount {
@@ -12,6 +22,35 @@ export const GET_ACCOUNT = gql`
     }
   }
 `;
+
+export const SUBSCRIBE_BALANCE_CHANGES = gql`
+subscription balanceChangeEvent($ownerId: ID!)  {
+    balanceChangeEvent(ownerId: $ownerId) {
+        ownerId
+        balanceChange {
+            sequenceNumber
+            delta
+        }
+    }
+  } 
+`;
+
+export const subscribe = async (): Promise<void> => {
+  const handleBalanceChangeEvent = (data: any) => {
+    console.log('event:', data);
+  };
+  const client = new ApolloClient({
+    link: wsLink,
+    cache: new InMemoryCache(),
+  });
+
+  client.subscribe(
+    {
+      query: SUBSCRIBE_BALANCE_CHANGES,
+      variables: { ownerId: '1234' },
+    },
+  ).subscribe(handleBalanceChangeEvent);
+};
 
 export const getAccount = async (): Promise<any> => {
   const client = new ApolloClient({
@@ -39,7 +78,8 @@ export const getAccount = async (): Promise<any> => {
 };
 
 const main = async () => {
-  getAccount();
+  await getAccount();
+  await subscribe();
 };
 
 main()
