@@ -35,16 +35,18 @@ export const addAccount = (id: string, tag: string, ownerId: string) => {
   });
 };
 
-export const balanceChange = (accountId: string, delta: number, description: string) => {
+export const balanceChange = (accountId: string, delta: number, description: string): number => {
   const account = accounts.find((a) => accountId === a.id);
   if (!account) {
     throw new Error(`unknown account ${accountId}`);
   }
+  const sequenceNumber = account.nextSequence
   balanceChanges.push({
-    accountId, sequenceNumber: account.nextSequence, delta, description,
+    accountId, sequenceNumber, delta, description,
   });
   account.nextSequence++
   account.balance += delta
+  return sequenceNumber
 };
 
 export const listAccounts = (): Account[] => {

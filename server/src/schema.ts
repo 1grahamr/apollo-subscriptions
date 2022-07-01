@@ -40,7 +40,7 @@ export const typeDefs = gql`
   }
 
   type BalanceChangeEvent {
-    ownerId: ID!
+    accountId: ID!
     balanceChange: BalanceChange!
   }
 
