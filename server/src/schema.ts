@@ -2,27 +2,34 @@ import { gql } from 'apollo-server';
 
 export const typeDefs = gql`
   type Subscription {
-    balanceChangeEvent(ownerId: ID!): BalanceChangeEvent
+    balanceChangeEvent(accountId: ID!): BalanceChangeEvent
+    accountUpdated(id: ID!): Account
+  }
+
+  enum AccountStatus {
+    CREATING
+    OPEN
+    PAUSED
+    CLOSED
   }
 
   type Query {
     "get account"
-    getAccount(tag: String!): Account!
+    getAccount(id: ID!): Account!
+    "list all accounts"
+    listAccounts: [Account]!
   }
 
   "An account"
   type Account {
-    id: ID!
     "identifier"
-    tag: String
+    id: ID!
     "user settable identifier"
+    tag: String
+    status: AccountStatus!
     owner: User
-    "The number of modules this track contains"
-    modulesCount: Int
-    "1=mono 2=stereo"
-    channels: Int!
     balance: Int!
-    balanceChanges: [Int!]!
+    balanceChanges: [BalanceChange!]!
   }
 
   "A person"
@@ -41,5 +48,6 @@ export const typeDefs = gql`
   type BalanceChange {
     sequenceNumber: Int!
     delta: Int!
+    description: String!
   }
 `;

@@ -9,16 +9,32 @@ import { useServer } from 'graphql-ws/lib/use/ws';
 import { PubSub } from 'graphql-subscriptions';
 import { typeDefs } from './schema';
 
-const getAccount = (parent: any, args: any, context: any, info: any) => {
+import * as data from './data';
+import {setup} from './testData'
+
+const getAccountResolver = (parent: any, args: any, context: any, info: any) => {
   console.log('getAccount resolver', {
     parent, args, context, info,
-  });
+  })
+  const account = data.getAccount(args.id)
+  const owner = data.getUser(account.ownerId)
   return {
-    id: 'unknown',
-    tag: args.tag,
-    balance: 100,
+    id: account.id,
+    tag: account.tag,
+    balance: account.balance,
+    status: account.status,
+    owner: {
+      id: owner.id,
+      name: owner.name,
+    },
+    balanceChanges: data.getBalanceChanges(account.id).map(bc => ({...bc})),
   };
 };
+
+const listAccountsResolver = (parent: any, args: any, context: any, info: any) => {
+  const accounts = data.listAccounts()
+  return accounts.map(a => getAccountResolver({}, {id: a.id}, {}, {}))
+}
 
 async function startApolloServer(typeDefs: any, resolvers: any): Promise<express.Express> {
   const app = express();
@@ -69,12 +85,15 @@ async function startApolloServer(typeDefs: any, resolvers: any): Promise<express
 
 let globalCount = 0;
 
+setup()
+
 const main = async () => {
   const pubsub = new PubSub();
 
   const resolvers = {
     Query: {
-      getAccount,
+      getAccount: getAccountResolver,
+      listAccounts: listAccountsResolver,
     },
     Subscription: {
       balanceChangeEvent: {
