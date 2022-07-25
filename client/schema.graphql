@@ -33,31 +33,36 @@ directive @connection(
 ) on FIELD
 
 type Subscription {
-  balanceChangeEvent(ownerId: ID!): BalanceChangeEvent
+  balanceChangeEvent(accountId: ID!): BalanceChangeEvent
+  accountUpdated(id: ID!): Account
+}
+
+enum AccountStatus {
+  CREATING
+  OPEN
+  PAUSED
+  CLOSED
 }
 
 type Query {
   """get account"""
-  getAccount(tag: String!): Account!
+  getAccount(id: ID!): Account!
+
+  """list all accounts"""
+  listAccounts: [Account]!
 }
 
 """An account"""
 type Account {
+  """identifier"""
   id: ID!
 
-  """identifier"""
-  tag: String
-
   """user settable identifier"""
+  tag: String
+  status: AccountStatus!
   owner: User
-
-  """The number of modules this track contains"""
-  modulesCount: Int
-
-  """1=mono 2=stereo"""
-  channels: Int!
   balance: Int!
-  balanceChanges: [Int!]!
+  balanceChanges: [BalanceChange!]!
 }
 
 """A person"""
@@ -69,7 +74,7 @@ type User {
 }
 
 type BalanceChangeEvent {
-  ownerId: ID!
+  accountId: ID!
   balanceChange: BalanceChange!
 }
 
@@ -77,4 +82,5 @@ type BalanceChangeEvent {
 type BalanceChange {
   sequenceNumber: Int!
   delta: Int!
+  description: String!
 }

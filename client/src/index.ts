@@ -16,17 +16,20 @@ const wsLink = new GraphQLWsLink(createClient({
 
 export const GET_ACCOUNT = gql`
   query GetAccount {
-    getAccount(tag: "graham") {
-      tag
+    getAccount(id: "8004") {
+      id
+      owner {
+        name
+      }
       balance
     }
   }
 `;
 
 export const SUBSCRIBE_BALANCE_CHANGES = gql`
-subscription balanceChangeEvent($ownerId: ID!)  {
-    balanceChangeEvent(ownerId: $ownerId) {
-        ownerId
+subscription balanceChangeEvent($accountId: ID!)  {
+    balanceChangeEvent(accountId: $accountId) {
+        accountId
         balanceChange {
             sequenceNumber
             delta
@@ -37,7 +40,7 @@ subscription balanceChangeEvent($ownerId: ID!)  {
 
 export const subscribe = async (): Promise<void> => {
   const handleBalanceChangeEvent = (data: any) => {
-    console.log('event:', data);
+    console.log(JSON.stringify(data, null,2));
   };
   const client = new ApolloClient({
     link: wsLink,
@@ -47,7 +50,7 @@ export const subscribe = async (): Promise<void> => {
   client.subscribe(
     {
       query: SUBSCRIBE_BALANCE_CHANGES,
-      variables: { ownerId: '1234' },
+      variables: { accountId: '8004' },
     },
   ).subscribe(handleBalanceChangeEvent);
 };
@@ -61,7 +64,6 @@ export const getAccount = async (): Promise<any> => {
     }),
     cache: new InMemoryCache(),
   });
-
   return new Promise((resolve) => {
     client.query<any>({
       query: GET_ACCOUNT,
@@ -69,16 +71,14 @@ export const getAccount = async (): Promise<any> => {
       },
     })
       .then((result) => {
-        console.log(JSON.stringify(result));
         const cmsAccount: any = result?.data;
-
-        resolve(cmsAccount);
+        resolve(cmsAccount)
       });
   });
 };
 
 const main = async () => {
-  await getAccount();
+  console.log(JSON.stringify(await getAccount(), null, 2))
   await subscribe();
 };
 
